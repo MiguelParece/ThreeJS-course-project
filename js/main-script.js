@@ -81,7 +81,7 @@ function createScene() {
     materials.push(material);
 
     createCarrossel(10, 0, 10);
-
+    createSkydome();
     scene.add(new THREE.AxesHelper(10));
 }
 
@@ -315,8 +315,20 @@ function addCarrosselTopLevel(obj) {
 
 }
 
+////////////////////////
+/* SKYDOME */
+////////////////////////
 
+function createSkydome() {
+    'use strict';
+    var geometry = new THREE.SphereGeometry(100, 60, 40);
+    const texture = new THREE.TextureLoader().load('images/Sky.jpg');
 
+    var material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+
+    var sphere = new THREE.Mesh(geometry, material);
+    scene.add(sphere);
+}
 
 //////////////////////
 /* CHANGE WIREFRAME */
@@ -580,3 +592,4 @@ function onKeyUp(e) {
 
 init();
 animate();
+
