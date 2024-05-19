@@ -53,7 +53,9 @@ var material;
 
 //objects to be manipulated
 
-
+var moveBase = false;
+var moveMiddle = false;
+var moveTop = false;
 
 //activated while key is pressed
 
@@ -188,10 +190,13 @@ function addCarrosselBaseLevel(obj) {
     obj.add(baseRing);
 
     baseRing.update = function () {
-        baseRing.position.y += 0.01;
+        baseRing.position.y += 0.1;
     }
 
-
+    baseRing.fall = function () {
+        if (baseRing.position.y > 0)
+            baseRing.position.y -= 0.05;
+    }
 
 }
 
@@ -243,7 +248,12 @@ function addCarrosselMiddleLevel(obj) {
     obj.add(middleRing);
 
     middleRing.update = function () {
-        middleRing.position.y += 0.01;
+        middleRing.position.y += 0.1;
+    }
+
+    middleRing.fall = function () {
+        if (middleRing.position.y > 0)
+            middleRing.position.y -= 0.05;
     }
 }
 
@@ -290,10 +300,15 @@ function addCarrosselTopLevel(obj) {
     var material = new THREE.MeshBasicMaterial({ color: 0x00003f });
     // Create a mesh and add it to the scene
     topRing = new THREE.Mesh(geometry, material);
-    topRing.position.set(0, TOP_RING_HEIGHT + MIDDLE_RING_HEIGHT, 0);
+    topRing.position.set(0, BASE_RING_HEIGHT + MIDDLE_RING_HEIGHT, 0);
 
     topRing.update = function () {
-        topRing.position.y += 0.01;
+        topRing.position.y += 0.1;
+    }
+
+    topRing.fall = function () {
+        if (topRing.position.y > 0)
+            topRing.position.y -= 0.05;
     }
 
     obj.add(topRing);
@@ -348,6 +363,27 @@ function changeWireframe() {
 /* UPDATE */
 ////////////
 
+function update() {
+    'use strict';
+    if (moveBase) {
+        baseRing.update();
+    } else {
+        baseRing.fall();
+    }
+    if (moveMiddle) {
+        middleRing.update();
+    } else {
+        middleRing.fall();
+    }
+    if (moveTop) {
+        topRing.update();
+    } else {
+        topRing.fall();
+    }
+    //checkCollisions();
+    changeWireframe();
+}
+
 /////////////
 /* DISPLAY */
 /////////////
@@ -399,6 +435,7 @@ function animate(currentTime) {
         return;
     }
     lastTime = currentTime;
+    update();
     render();
     requestAnimationFrame(animate);
 
@@ -439,6 +476,18 @@ function onKeyDown(e) {
 
     switch (e.keyCode) {
 
+        // key 1
+        case 49:
+            moveBase = true;
+            break;
+        //key 2
+        case 50:
+            moveMiddle = true;
+            break;
+        //key 3
+        case 51:
+            moveTop = true;
+            break;
 
         case 87: //W
         case 119: //w
@@ -483,6 +532,20 @@ function onKeyDown(e) {
 function onKeyUp(e) {
     'use strict';
     switch (e.keyCode) {
+
+        // key 1
+        case 49:
+            moveBase = false;
+            break;
+        //key 2
+        case 50:
+            moveMiddle = false;
+            break;
+        //key 3
+        case 51:
+            moveTop = false;
+            break;
+
         case 87: //W
         case 119: //w
             break;
