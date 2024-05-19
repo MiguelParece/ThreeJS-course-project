@@ -321,8 +321,8 @@ function addCarrosselTopLevel(obj) {
 
 function createSkydome() {
     'use strict';
-    var geometry = new THREE.SphereGeometry(100, 60, 40);
-    const texture = new THREE.TextureLoader().load('images/Sky.jpg');
+    var geometry = new THREE.SphereGeometry(50, 60, 40);
+    const texture = new THREE.TextureLoader().load('images/frame1.png');
 
     var material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
 
