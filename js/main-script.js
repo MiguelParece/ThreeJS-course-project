@@ -16,6 +16,26 @@ function scale(number, inMin, inMax, outMin, outMax) {
 //////////////////////
 /* CONSTANT DIMENSIONS */
 //////////////////////
+const SCALE = 1;
+
+const INNER_CILINDER_RADIUS = 1 * SCALE;
+const INNER_CILINDER_HEIGHT = 5 * SCALE;
+
+const TOP_RING_RADIUS = INNER_CILINDER_RADIUS + INNER_CILINDER_RADIUS;
+const TOP_RING_HEIGHT = INNER_CILINDER_HEIGHT / 4;
+const TOP_RING_HOLE_RADIUS = INNER_CILINDER_RADIUS;
+
+
+const MIDDLE_RING_HEIGHT = INNER_CILINDER_HEIGHT / 4;
+const MIDDLE_RING_HOLE_RADIUS = TOP_RING_RADIUS;
+const MIDDLE_RING_RADIUS = TOP_RING_RADIUS + INNER_CILINDER_RADIUS;
+
+
+const BASE_RING_RADIUS = MIDDLE_RING_RADIUS + INNER_CILINDER_RADIUS;
+const BASE_RING_HEIGHT = INNER_CILINDER_HEIGHT / 4;
+const BASE_RING_HOLE_RADIUS = MIDDLE_RING_RADIUS;
+
+
 
 
 
@@ -24,6 +44,8 @@ function scale(number, inMin, inMax, outMin, outMax) {
 //////////////////////
 var camera, scene, renderer, controls, freeCamera;
 
+
+var baseRing, middleRing, topRing;
 
 
 
@@ -98,18 +120,21 @@ function createCarrossel(x, y, z) {
     carrossel.position.set(x, y, z);
     createInnerCilinder(carrossel);
     addCarrosselBaseLevel(carrossel);
+    addCarrosselMiddleLevel(carrossel);
+    addCarrosselTopLevel(carrossel);
     scene.add(carrossel);
 
 }
 
 function createInnerCilinder(obj) {
     'use strict';
-    var geometry = new THREE.CylinderGeometry(1, 1, 2, 32);
+    var geometry = new THREE.CylinderGeometry(INNER_CILINDER_RADIUS, INNER_CILINDER_RADIUS, INNER_CILINDER_HEIGHT, 20);
 
     var material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
 
     var cylinder = new THREE.Mesh(geometry, material);
 
+    cylinder.position.set(0, INNER_CILINDER_HEIGHT / 2, 0);
 
     obj.add(cylinder);
 
@@ -118,25 +143,161 @@ function createInnerCilinder(obj) {
 function addCarrosselBaseLevel(obj) {
     'use strict';
 
+    // Create a path for the shape of the cylinder
+    var shape = new THREE.Shape();
+    var radius = BASE_RING_RADIUS; // Radius of the cylinder
+    var height = BASE_RING_HEIGHT; // Height of the cylinder
+    var holeRadius = BASE_RING_HOLE_RADIUS; // Radius of the hole
+
+    // Outer circle
+    shape.moveTo(radius, 0);
+    for (var i = 0; i <= 360; i += 5) {
+        var angle = (i * Math.PI) / 180;
+        var x = radius * Math.cos(angle);
+        var y = radius * Math.sin(angle);
+        shape.lineTo(x, y);
+    }
+
+    // Inner circle (hole)
+    var hole = new THREE.Path();
+    hole.moveTo(holeRadius, 0);
+    for (var i = 0; i <= 360; i += 5) {
+        var angle = (i * Math.PI) / 180;
+        var x = holeRadius * Math.cos(angle);
+        var y = holeRadius * Math.sin(angle);
+        hole.lineTo(x, y);
+    }
+    shape.holes.push(hole);
+
+    // Extrude the shape to create the cylinder
     var extrudeSettings = {
-        amount: 2,
         steps: 1,
-        bevelEnabled: false,
-        curveSegments: 8
+        depth: -height,
+        bevelEnabled: false
     };
 
+    var geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    // Rotate the geometry to change the cylinder axis to y
+    geometry.rotateX(Math.PI / 2);
+    // Create a material
+    var material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+    // Create a mesh and add it to the scene
 
+    baseRing = new THREE.Mesh(geometry, material);
+    baseRing.position.set(0, 0, 0);
+    obj.add(baseRing);
+
+    baseRing.update = function () {
+        baseRing.position.y += 0.01;
+    }
 
 
 
 }
 
-function addCarrosselMiddleLevel() {
+function addCarrosselMiddleLevel(obj) {
     'use strict';
+    // Create a path for the shape of the cylinder
+    var shape = new THREE.Shape();
+    var radius = MIDDLE_RING_RADIUS; // Radius of the cylinder
+    var height = MIDDLE_RING_HEIGHT; // Height of the cylinder
+    var holeRadius = MIDDLE_RING_HOLE_RADIUS; // Radius of the hole
+
+    // Outer circle
+    shape.moveTo(radius, 0);
+    for (var i = 0; i <= 360; i += 5) {
+        var angle = (i * Math.PI) / 180;
+        var x = radius * Math.cos(angle);
+        var y = radius * Math.sin(angle);
+        shape.lineTo(x, y);
+    }
+
+    // Inner circle (hole)
+    var hole = new THREE.Path();
+    hole.moveTo(holeRadius, 0);
+    for (var i = 0; i <= 360; i += 5) {
+        var angle = (i * Math.PI) / 180;
+        var x = holeRadius * Math.cos(angle);
+        var y = holeRadius * Math.sin(angle);
+        hole.lineTo(x, y);
+    }
+    shape.holes.push(hole);
+
+    // Extrude the shape to create the cylinder
+    var extrudeSettings = {
+        steps: 1,
+        depth: -height,
+        bevelEnabled: false
+    };
+
+    var geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    // Rotate the geometry to change the cylinder axis to y
+    geometry.rotateX(Math.PI / 2);
+    // Create a material
+    var material = new THREE.MeshBasicMaterial({ color: 0x00006f });
+    // Create a mesh and add it to the scene
+
+    middleRing = new THREE.Mesh(geometry, material);
+
+    middleRing.position.set(0, MIDDLE_RING_HEIGHT, 0);
+    obj.add(middleRing);
+
+    middleRing.update = function () {
+        middleRing.position.y += 0.01;
+    }
 }
 
-function addCarrosselTopLevel() {
+function addCarrosselTopLevel(obj) {
     'use strict';
+    // Create a path for the shape of the cylinder
+    var shape = new THREE.Shape();
+    var radius = TOP_RING_RADIUS; // Radius of the cylinder
+    var height = TOP_RING_HEIGHT; // Height of the cylinder
+    var holeRadius = TOP_RING_HOLE_RADIUS; // Radius of the hole
+
+    // Outer circle
+    shape.moveTo(radius, 0);
+    for (var i = 0; i <= 360; i += 5) {
+        var angle = (i * Math.PI) / 180;
+        var x = radius * Math.cos(angle);
+        var y = radius * Math.sin(angle);
+        shape.lineTo(x, y);
+    }
+
+    // Inner circle (hole)
+    var hole = new THREE.Path();
+    hole.moveTo(holeRadius, 0);
+
+    for (var i = 0; i <= 360; i += 5) {
+        var angle = (i * Math.PI) / 180;
+        var x = holeRadius * Math.cos(angle);
+        var y = holeRadius * Math.sin(angle);
+        hole.lineTo(x, y);
+    }
+    shape.holes.push(hole);
+
+    // Extrude the shape to create the cylinder
+    var extrudeSettings = {
+        steps: 1,
+        depth: -height,
+        bevelEnabled: false
+    };
+
+    var geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    // Rotate the geometry to change the cylinder axis to y
+    geometry.rotateX(Math.PI / 2);
+    // Create a material
+    var material = new THREE.MeshBasicMaterial({ color: 0x00003f });
+    // Create a mesh and add it to the scene
+    topRing = new THREE.Mesh(geometry, material);
+    topRing.position.set(0, TOP_RING_HEIGHT + MIDDLE_RING_HEIGHT, 0);
+
+    topRing.update = function () {
+        topRing.position.y += 0.01;
+    }
+
+    obj.add(topRing);
+
 }
 
 
@@ -276,39 +437,40 @@ function onResize() {
 function onKeyDown(e) {
 
 
-    if (!inAnimation) {
-        switch (e.keyCode) {
-            case 87: //W
-            case 119: //w
-                break;
-            case 83: //S
-            case 115: //s
-                break;
-            case 81: //Q    
-            case 113: //q
-                break;
-            case 65: //A
-            case 97: //a
-                break;
+    switch (e.keyCode) {
 
-            case 69: //E
-            case 101: //e
 
-                break;
-            case 68: //D
-            case 100: //d
-                break;
-            case 82: //R
-            case 114: //r
+        case 87: //W
+        case 119: //w
+            break;
+        case 83: //S
+        case 115: //s
+            break;
+        case 81: //Q    
+        case 113: //q
+            break;
+        case 65: //A
+        case 97: //a
+            break;
 
-                break;
-            case 70: //F
-            case 102: //f
-                break;
-            case 55: //7
+        case 69: //E
+        case 101: //e
 
-        }
+            break;
+        case 68: //D
+        case 100: //d
+            break;
+        case 82: //R
+        case 114: //r
+
+            break;
+        case 70: //F
+        case 102: //f
+            break;
+        case 55: //7
+
     }
+
 }
 
 
