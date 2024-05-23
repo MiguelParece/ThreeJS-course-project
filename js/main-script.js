@@ -16,26 +16,36 @@ function scale(number, inMin, inMax, outMin, outMax) {
 //////////////////////
 /* CONSTANT DIMENSIONS */
 //////////////////////
+
+
 const SCALE = 1;
 
-const INNER_CILINDER_RADIUS = 1 * SCALE;
-const INNER_CILINDER_HEIGHT = 5 * SCALE;
+const baseRadius = 1 * SCALE;
+const baseHeight = 5 * SCALE;
 
-const TOP_RING_RADIUS = INNER_CILINDER_RADIUS + INNER_CILINDER_RADIUS;
-const TOP_RING_HEIGHT = INNER_CILINDER_HEIGHT / 4;
-const TOP_RING_HOLE_RADIUS = INNER_CILINDER_RADIUS;
-
-
-const MIDDLE_RING_HEIGHT = INNER_CILINDER_HEIGHT / 4;
-const MIDDLE_RING_HOLE_RADIUS = TOP_RING_RADIUS;
-const MIDDLE_RING_RADIUS = TOP_RING_RADIUS + INNER_CILINDER_RADIUS;
+const innerCarrocelRadius = baseRadius + baseRadius;
+const TOP_RING_HEIGHT = baseHeight / 4;
+const TOP_RING_HOLE_RADIUS = baseRadius;
 
 
-const BASE_RING_RADIUS = MIDDLE_RING_RADIUS + INNER_CILINDER_RADIUS;
-const BASE_RING_HEIGHT = INNER_CILINDER_HEIGHT / 4;
-const BASE_RING_HOLE_RADIUS = MIDDLE_RING_RADIUS;
+const MIDDLE_RING_HOLE_RADIUS = innerCarrocelRadius;
+const middleCarrocelRadius = innerCarrocelRadius + baseRadius;
 
 
+const outerCarrocelRadius = middleCarrocelRadius + baseRadius;
+
+const BASE_RING_HOLE_RADIUS = middleCarrocelRadius;
+
+
+
+
+const curveSegments = 32;
+
+const carrocelHeight = baseHeight / 4;
+
+
+const limitHeightUp = baseHeight / 2;
+const limitHeightDown = 0.2;
 
 
 
@@ -44,8 +54,8 @@ const BASE_RING_HOLE_RADIUS = MIDDLE_RING_RADIUS;
 //////////////////////
 var camera, scene, renderer, controls, freeCamera;
 
+const obj_names = ['dodecahedron', 'icosahedron', 'torus', 'torusKnot', 'cube', 'hyperboloid', 'cylinder', 'cone'];
 
-var baseRing, middleRing, topRing;
 
 
 
@@ -53,17 +63,19 @@ var material;
 
 //objects to be manipulated
 
-var moveBase = false;
-var moveMiddle = false;
-var moveTop = false;
+var innerRing, middleRing, outerRing;
+
+var objects = [];
+
 
 //activated while key is pressed
 
+var moveInner = false;
+var moveMiddle = false;
+var moveOuter = false;
 
 
 var wireframeFlag = true;
-
-var pickedObject = false;
 
 //materials
 
@@ -81,7 +93,7 @@ function createScene() {
     materials.push(material);
 
     createCarrossel(10, 0, 10);
-    createSkydome();
+
     scene.add(new THREE.AxesHelper(10));
 }
 
@@ -119,8 +131,8 @@ var ambientLight = new THREE.AmbientLight(0xffffff); // soft white light
 function createCarrossel(x, y, z) {
     'use strict';
     var carrossel = new THREE.Object3D();
-    carrossel.position.set(x, y, z);
-    createInnerCilinder(carrossel);
+    carrossel.position.set(x, y + baseHeight / 2, z);
+    createInnerRing(carrossel);
     addCarrosselBaseLevel(carrossel);
     addCarrosselMiddleLevel(carrossel);
     addCarrosselTopLevel(carrossel);
@@ -128,207 +140,424 @@ function createCarrossel(x, y, z) {
 
 }
 
-function createInnerCilinder(obj) {
+function addCarrosselBaseLevel(obj) {
     'use strict';
-    var geometry = new THREE.CylinderGeometry(INNER_CILINDER_RADIUS, INNER_CILINDER_RADIUS, INNER_CILINDER_HEIGHT, 20);
+
+    var geometry = new THREE.CylinderGeometry(baseRadius, baseRadius, baseHeight, curveSegments);
 
     var material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
 
     var cylinder = new THREE.Mesh(geometry, material);
 
-    cylinder.position.set(0, INNER_CILINDER_HEIGHT / 2, 0);
-
     obj.add(cylinder);
+
 
 }
 
-function addCarrosselBaseLevel(obj) {
+function createInnerRing(obj) {
     'use strict';
 
-    // Create a path for the shape of the cylinder
+    innerRing = new THREE.Object3D();
+
+    innerRing.dir = 'U';
+
     var shape = new THREE.Shape();
-    var radius = BASE_RING_RADIUS; // Radius of the cylinder
-    var height = BASE_RING_HEIGHT; // Height of the cylinder
-    var holeRadius = BASE_RING_HOLE_RADIUS; // Radius of the hole
+    var arcStartAngle = 0; // Start angle of the arc
+    var arcEndAngle = Math.PI * 2; // End angle of the arc
 
-    // Outer circle
-    shape.moveTo(radius, 0);
-    for (var i = 0; i <= 360; i += 5) {
-        var angle = (i * Math.PI) / 180;
-        var x = radius * Math.cos(angle);
-        var y = radius * Math.sin(angle);
-        shape.lineTo(x, y);
-    }
+    shape.moveTo(baseRadius, 0);
+    shape.absarc(0, 0, baseRadius, arcStartAngle, arcEndAngle, false);
+    shape.lineTo(innerCarrocelRadius, 0);
+    shape.absarc(0, 0, innerCarrocelRadius, arcEndAngle, arcStartAngle, true);
+    shape.lineTo(baseRadius, 0);
 
-    // Inner circle (hole)
-    var hole = new THREE.Path();
-    hole.moveTo(holeRadius, 0);
-    for (var i = 0; i <= 360; i += 5) {
-        var angle = (i * Math.PI) / 180;
-        var x = holeRadius * Math.cos(angle);
-        var y = holeRadius * Math.sin(angle);
-        hole.lineTo(x, y);
-    }
-    shape.holes.push(hole);
-
-    // Extrude the shape to create the cylinder
+    // Define extrude settings
     var extrudeSettings = {
-        steps: 1,
-        depth: -height,
-        bevelEnabled: false
+        steps: 100, // Number of steps for extrusion
+        depth: carrocelHeight, // Depth of extrusion
+        bevelEnabled: false, // Disable bevel
+        bevelThickness: 0, // Bevel thickness
+        bevelSize: 0, // Bevel size
+        bevelSegments: 0 // Number of bevel segments
     };
-
+    // Create a geometry by extruding the ring shape
     var geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    // Rotate the geometry to change the cylinder axis to y
-    geometry.rotateX(Math.PI / 2);
+
     // Create a material
-    var material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
-    // Create a mesh and add it to the scene
+    var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
 
-    baseRing = new THREE.Mesh(geometry, material);
-    baseRing.position.set(0, 0, 0);
-    obj.add(baseRing);
+    // Create a mesh using the geometry and material
+    var mesh = new THREE.Mesh(geometry, material);
 
-    baseRing.update = function () {
-        baseRing.position.y += 0.1;
+    mesh.rotateX(Math.PI / 2);
+    mesh.position.set(0, -carrocelHeight / 2, 0);
+
+    //random sorting obj_names and then creating items each pi/4 radians
+    obj_names.sort(() => Math.random() - 0.5);
+    for (let i = 0; i < obj_names.length; i++) {
+        let x = Math.cos((Math.PI / 4) * i) * (baseRadius + ((innerCarrocelRadius - baseRadius) / 2));
+        let z = Math.sin((Math.PI / 4) * i) * (baseRadius + ((innerCarrocelRadius - baseRadius) / 2));
+        switch (obj_names[i]) {
+            case 'dodecahedron':
+                createDodecahedron(x, z, .3, innerRing);
+                break;
+            case 'icosahedron':
+                createIcosahedron(x, z, .4, innerRing);
+                break;
+            case 'torus':
+                createTorus(x, z, 0.2, 0.2, innerRing);
+                break;
+            case 'torusKnot':
+                createTorusKnot(x, z, .1, 0.1, 100, 16, 2, 3, innerRing);
+                break;
+            case 'cube':
+                createCube(x, z, innerRing);
+                break;
+            case 'hyperboloid':
+                createHyperboloidOneSheet(innerRing, .1, .1, .1, 32, 32, x, z);
+                break;
+            case 'cylinder':
+                createCylinder(.2, .2, .2, x, z, innerRing);
+                break;
+            case 'cone':
+                createCone(innerRing, .5, .5, x, z);
+                break;
+            default:
+                break;
+        }
     }
 
-    baseRing.fall = function () {
-        if (baseRing.position.y > 0)
-            baseRing.position.y -= 0.05;
-    }
+    innerRing.add(mesh);
+    obj.add(innerRing);
 
 }
 
 function addCarrosselMiddleLevel(obj) {
     'use strict';
-    // Create a path for the shape of the cylinder
+
+    middleRing = new THREE.Object3D();
+
+    middleRing.dir = 'U';
+
     var shape = new THREE.Shape();
-    var radius = MIDDLE_RING_RADIUS; // Radius of the cylinder
-    var height = MIDDLE_RING_HEIGHT; // Height of the cylinder
-    var holeRadius = MIDDLE_RING_HOLE_RADIUS; // Radius of the hole
+    var arcStartAngle = 0; // Start angle of the arc
+    var arcEndAngle = Math.PI * 2; // End angle of the arc
 
-    // Outer circle
-    shape.moveTo(radius, 0);
-    for (var i = 0; i <= 360; i += 5) {
-        var angle = (i * Math.PI) / 180;
-        var x = radius * Math.cos(angle);
-        var y = radius * Math.sin(angle);
-        shape.lineTo(x, y);
-    }
+    shape.moveTo(innerCarrocelRadius, 0);
+    shape.absarc(0, 0, innerCarrocelRadius, arcStartAngle, arcEndAngle, false);
+    shape.lineTo(middleCarrocelRadius, 0);
+    shape.absarc(0, 0, middleCarrocelRadius, arcEndAngle, arcStartAngle, true);
+    shape.lineTo(innerCarrocelRadius, 0);
 
-    // Inner circle (hole)
-    var hole = new THREE.Path();
-    hole.moveTo(holeRadius, 0);
-    for (var i = 0; i <= 360; i += 5) {
-        var angle = (i * Math.PI) / 180;
-        var x = holeRadius * Math.cos(angle);
-        var y = holeRadius * Math.sin(angle);
-        hole.lineTo(x, y);
-    }
-    shape.holes.push(hole);
-
-    // Extrude the shape to create the cylinder
+    // Define extrude settings
     var extrudeSettings = {
-        steps: 1,
-        depth: -height,
-        bevelEnabled: false
+        steps: 100, // Number of steps for extrusion
+        depth: carrocelHeight, // Depth of extrusion
+        bevelEnabled: false, // Disable bevel
+        bevelThickness: 0, // Bevel thickness
+        bevelSize: 0, // Bevel size
+        bevelSegments: 0 // Number of bevel segments
     };
-
+    // Create a geometry by extruding the ring shape
     var geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    // Rotate the geometry to change the cylinder axis to y
-    geometry.rotateX(Math.PI / 2);
+
     // Create a material
-    var material = new THREE.MeshBasicMaterial({ color: 0x00006f });
-    // Create a mesh and add it to the scene
+    var material = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
-    middleRing = new THREE.Mesh(geometry, material);
+    // Create a mesh using the geometry and material
+    var mesh = new THREE.Mesh(geometry, material);
 
-    middleRing.position.set(0, MIDDLE_RING_HEIGHT, 0);
+    mesh.rotateX(Math.PI / 2);
+    mesh.position.set(0, -carrocelHeight / 2, 0);
+
+    middleRing.add(mesh);
+
+    obj_names.sort(() => Math.random() - 0.5);
+    for (let i = 0; i < obj_names.length; i++) {
+        let x = Math.cos((Math.PI / 4) * i) * (innerCarrocelRadius + ((middleCarrocelRadius - innerCarrocelRadius) / 2));
+        let z = Math.sin((Math.PI / 4) * i) * (innerCarrocelRadius + ((middleCarrocelRadius - innerCarrocelRadius) / 2));
+        switch (obj_names[i]) {
+            case 'dodecahedron':
+                createDodecahedron(x, z, .3, middleRing);
+                break;
+            case 'icosahedron':
+                createIcosahedron(x, z, .4, middleRing);
+                break;
+            case 'torus':
+                createTorus(x, z, 0.2, 0.2, middleRing);
+                break;
+            case 'torusKnot':
+                createTorusKnot(x, z, .1, 0.1, 100, 16, 2, 3, middleRing);
+                break;
+            case 'cube':
+                createCube(x, z, middleRing);
+                break;
+            case 'hyperboloid':
+                createHyperboloidOneSheet(middleRing, .1, .1, .1, 32, 32, x, z);
+                break;
+            case 'cylinder':
+                createCylinder(.2, .2, .2, x, z, middleRing);
+                break;
+            case 'cone':
+                createCone(middleRing, .5, .5, x, z);
+                break;
+            default:
+                break;
+        }
+    }
+
     obj.add(middleRing);
-
-    middleRing.update = function () {
-        middleRing.position.y += 0.1;
-    }
-
-    middleRing.fall = function () {
-        if (middleRing.position.y > 0)
-            middleRing.position.y -= 0.05;
-    }
 }
 
 function addCarrosselTopLevel(obj) {
     'use strict';
-    // Create a path for the shape of the cylinder
+
+    outerRing = new THREE.Object3D();
+
+    outerRing.dir = 'U';
+
     var shape = new THREE.Shape();
-    var radius = TOP_RING_RADIUS; // Radius of the cylinder
-    var height = TOP_RING_HEIGHT; // Height of the cylinder
-    var holeRadius = TOP_RING_HOLE_RADIUS; // Radius of the hole
+    var arcStartAngle = 0; // Start angle of the arc
+    var arcEndAngle = Math.PI * 2; // End angle of the arc
 
-    // Outer circle
-    shape.moveTo(radius, 0);
-    for (var i = 0; i <= 360; i += 5) {
-        var angle = (i * Math.PI) / 180;
-        var x = radius * Math.cos(angle);
-        var y = radius * Math.sin(angle);
-        shape.lineTo(x, y);
-    }
+    shape.moveTo(middleCarrocelRadius, 0);
+    shape.absarc(0, 0, middleCarrocelRadius, arcStartAngle, arcEndAngle, false);
+    shape.lineTo(outerCarrocelRadius, 0);
+    shape.absarc(0, 0, outerCarrocelRadius, arcEndAngle, arcStartAngle, true);
+    shape.lineTo(middleCarrocelRadius, 0);
 
-    // Inner circle (hole)
-    var hole = new THREE.Path();
-    hole.moveTo(holeRadius, 0);
-
-    for (var i = 0; i <= 360; i += 5) {
-        var angle = (i * Math.PI) / 180;
-        var x = holeRadius * Math.cos(angle);
-        var y = holeRadius * Math.sin(angle);
-        hole.lineTo(x, y);
-    }
-    shape.holes.push(hole);
-
-    // Extrude the shape to create the cylinder
+    // Define extrude settings
     var extrudeSettings = {
-        steps: 1,
-        depth: -height,
-        bevelEnabled: false
+        steps: 100, // Number of steps for extrusion
+        depth: carrocelHeight, // Depth of extrusion
+        bevelEnabled: false, // Disable bevel
+        bevelThickness: 0, // Bevel thickness
+        bevelSize: 0, // Bevel size
+        bevelSegments: 0 // Number of bevel segments
     };
-
+    // Create a geometry by extruding the ring shape
     var geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    // Rotate the geometry to change the cylinder axis to y
-    geometry.rotateX(Math.PI / 2);
+
     // Create a material
-    var material = new THREE.MeshBasicMaterial({ color: 0x00003f });
-    // Create a mesh and add it to the scene
-    topRing = new THREE.Mesh(geometry, material);
-    topRing.position.set(0, BASE_RING_HEIGHT + MIDDLE_RING_HEIGHT, 0);
+    var material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
 
-    topRing.update = function () {
-        topRing.position.y += 0.1;
+    // Create a mesh using the geometry and material
+    var mesh = new THREE.Mesh(geometry, material);
+
+    mesh.rotateX(Math.PI / 2);
+    mesh.position.set(0, -carrocelHeight / 2, 0);
+
+    outerRing.add(mesh);
+
+    obj_names.sort(() => Math.random() - 0.5);
+    for (let i = 0; i < obj_names.length; i++) {
+        let x = Math.cos((Math.PI / 4) * i) * (middleCarrocelRadius + ((outerCarrocelRadius - middleCarrocelRadius) / 2));
+        let z = Math.sin((Math.PI / 4) * i) * (middleCarrocelRadius + ((outerCarrocelRadius - middleCarrocelRadius) / 2));
+        switch (obj_names[i]) {
+            case 'dodecahedron':
+                createDodecahedron(x, z, .3, outerRing);
+                break;
+            case 'icosahedron':
+                createIcosahedron(x, z, .4, outerRing);
+                break;
+            case 'torus':
+                createTorus(x, z, 0.2, 0.2, outerRing);
+                break;
+            case 'torusKnot':
+                createTorusKnot(x, z, .1, 0.1, 100, 16, 2, 3, outerRing);
+                break;
+            case 'cube':
+                createCube(x, z, outerRing);
+                break;
+            case 'hyperboloid':
+                createHyperboloidOneSheet(outerRing, .1, .1, .1, 32, 32, x, z);
+                break;
+            case 'cylinder':
+                createCylinder(.2, .2, .2, x, z, outerRing);
+                break;
+            case 'cone':
+                createCone(outerRing, .5, .5, x, z);
+                break;
+            default:
+                break;
+        }
     }
 
-    topRing.fall = function () {
-        if (topRing.position.y > 0)
-            topRing.position.y -= 0.05;
-    }
-
-    obj.add(topRing);
-
+    obj.add(outerRing);
 }
 
-////////////////////////
-/* SKYDOME */
-////////////////////////
 
-function createSkydome() {
+
+function createDodecahedron(x, z, radius, obj) {
+    const geometry = new THREE.DodecahedronGeometry(radius);
+    const material = new THREE.MeshBasicMaterial({ color: 0x0 });
+    const dodecahedron = new THREE.Mesh(geometry, material);
+    dodecahedron.position.set(x, (-carrocelHeight / 2) + radius, z);
+    obj.add(dodecahedron);
+    objects.push(dodecahedron);
+
+    dodecahedron.angVel = undefined;
+    dodecahedron.rotate = function () {
+        if (dodecahedron.angVel == undefined) {
+            dodecahedron.angVel = Math.random() * 0.1;
+        }
+        dodecahedron.rotateY(dodecahedron.angVel);
+    }
+}
+
+function createIcosahedron(x, z, radius, obj) {
+    const geometry = new THREE.IcosahedronGeometry(radius);
+    const material = new THREE.MeshBasicMaterial({ color: 0x000 });
+    const icosahedron = new THREE.Mesh(geometry, material);
+    icosahedron.position.set(x, -carrocelHeight / 2 + radius, z);
+    obj.add(icosahedron);
+    objects.push(icosahedron);
+
+    icosahedron.angVel = undefined;
+    icosahedron.rotate = function () {
+        if (icosahedron.angVel == undefined) {
+            icosahedron.angVel = Math.random() * 0.1;
+        }
+        icosahedron.rotateY(icosahedron.angVel);
+    }
+}
+
+function createTorus(x, z, radius, tubeRadius, obj) {
+    const geometry = new THREE.TorusGeometry(radius, tubeRadius);
+    const material = new THREE.MeshBasicMaterial({ color: 0x00 });
+    const torus = new THREE.Mesh(geometry, material);
+    torus.position.set(x, -carrocelHeight / 2 + radius, z);
+    obj.add(torus);
+    objects.push(torus);
+
+    torus.angVel = undefined;
+    torus.rotate = function () {
+        if (torus.angVel == undefined) {
+            torus.angVel = Math.random() * 0.1;
+        }
+        torus.rotateY(torus.angVel);
+    }
+}
+
+function createTorusKnot(x, z, radius, tubeRadius, tubularSegments, radialSegments, p, q, obj) {
+    const geometry = new THREE.TorusKnotGeometry(radius, tubeRadius, tubularSegments, radialSegments, p, q);
+    const material = new THREE.MeshBasicMaterial({ color: 0x0 });
+    const torusKnot = new THREE.Mesh(geometry, material);
+    torusKnot.position.set(x, -carrocelHeight / 2 + radius, z);
+    obj.add(torusKnot);
+    objects.push(torusKnot);
+
+    torusKnot.angVel = undefined;
+    torusKnot.rotate = function () {
+        if (torusKnot.angVel == undefined) {
+            torusKnot.angVel = Math.random() * 0.1;
+        }
+        torusKnot.rotateY(torusKnot.angVel);
+    }
+}
+
+function createCube(x, z, obj) {
     'use strict';
-    var geometry = new THREE.SphereGeometry(50, 60, 40);
-    const texture = new THREE.TextureLoader().load('images/frame1.png');
 
-    var material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+    var geometry = new THREE.BoxGeometry(.4, .4, .4);
 
-    var sphere = new THREE.Mesh(geometry, material);
-    scene.add(sphere);
+    var material = new THREE.MeshBasicMaterial({ color: 0x0000 });
+    var cube = new THREE.Mesh(geometry, material);
+
+
+    cube.position.set(x, -carrocelHeight / 2 + 0.2, z);
+
+    obj.add(cube);
+    objects.push(cube);
+
+    cube.angVel = undefined;
+    cube.rotate = function () {
+        if (cube.angVel == undefined) {
+            cube.angVel = Math.random() * 0.1;
+        }
+        cube.rotateY(cube.angVel);
+    }
 }
+
+function createHyperboloidOneSheet(obj, a, b, c, segments, heightSegments, posx, posz) {
+    var geometry = new THREE.BufferGeometry();
+    var vertices = [];
+    var indices = [];
+    for (var i = 0; i <= segments; i++) {
+        var u = i / segments * Math.PI * 2;
+        for (var j = 0; j <= heightSegments; j++) {
+            var v = (j / heightSegments - 0.5) * Math.PI;
+            var x = a * Math.cosh(v) * Math.cos(u);
+            var y = b * Math.cosh(v) * Math.sin(u);
+            var z = c * Math.sinh(v);
+            vertices.push(x, y, z);
+        }
+    }
+    for (var i = 0; i < segments; i++) {
+        for (var j = 0; j < heightSegments; j++) {
+            var index1 = i * (heightSegments + 1) + j;
+            var index2 = (i + 1) * (heightSegments + 1) + j;
+            var index3 = (i + 1) * (heightSegments + 1) + (j + 1);
+            var index4 = i * (heightSegments + 1) + (j + 1);
+            indices.push(index1, index2, index3);
+            indices.push(index1, index3, index4);
+        }
+    }
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    var material = new THREE.MeshBasicMaterial({ color: 0x0000, wireframe: false });
+    var mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(posx, -carrocelHeight / 2 + a + b, posz);
+
+    mesh.angVel = undefined;
+    mesh.rotate = function () {
+        if (mesh.angVel == undefined) {
+            mesh.angVel = Math.random() * 0.1;
+        }
+        mesh.rotateY(mesh.angVel);
+    }
+
+    obj.add(mesh);
+    objects.push(mesh);
+}
+
+function createCylinder(radiusTop, radiusBottom, height, posx, posz, obj) {
+    var geometry = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, 32, 32);
+    var material = new THREE.MeshBasicMaterial({ color: 0x000 });
+    var cylinder = new THREE.Mesh(geometry, material);
+    cylinder.position.set(posx, -carrocelHeight / 2 + height / 2, posz);
+
+    cylinder.angVel = undefined;
+    cylinder.rotate = function () {
+        if (cylinder.angVel == undefined) {
+            cylinder.angVel = Math.random() * 0.1;
+        }
+        cylinder.rotateY(cylinder.angVel);
+    }
+
+    obj.add(cylinder);
+}
+
+function createCone(obj, radius, height, posx, posz) {
+    var geometry = new THREE.ConeGeometry(radius, height, 32, 32);
+    var material = new THREE.MeshBasicMaterial({ color: 0x00 });
+    var cone = new THREE.Mesh(geometry, material);
+
+    cone.angVel = undefined;
+    cone.rotate = function () {
+        if (cone.angVel == undefined) {
+            cone.angVel = Math.random() * 0.1;
+        }
+        cone.rotateY(cone.angVel);
+    }
+
+    cone.position.set(posx, -carrocelHeight / 2 + height / 2, posz);
+    obj.add(cone);
+}
+
+
+
 
 //////////////////////
 /* CHANGE WIREFRAME */
@@ -346,25 +575,6 @@ function changeWireframe() {
 /* CHECK COLLISIONS */
 //////////////////////
 
-/* function checkCollisions() {
-    'use strict';
-    var boundingBox = new THREE.Box3().setFromObject();
-    let boxSize = new THREE.Vector3();
-    var center = boundingBox.getCenter(boxSize);
-    //console.log(center);
-    for (var i = 0; i < objects.length; i++) {
-        //console.log(objects[i].position);
-        if (center.distanceToSquared(objects[i].position) < (claw.colision_radius + OBJECTS_COLL_RADIUS) ** 2) {
-            inAnimation = true;
-            setBoolsFalse();
-            objects[i].position.set(0, -CLAW_HEIGHT - 0.3, 0);
-            claw.add(objects[i]);
-            objectInClaw = objects[i];
-            return;
-        }
-    }
-}
- */
 
 ///////////////////////
 /* HANDLE COLLISIONS */
@@ -377,23 +587,53 @@ function changeWireframe() {
 
 function update() {
     'use strict';
-    if (moveBase) {
-        baseRing.update();
-    } else {
-        baseRing.fall();
+
+    for (let i = 0; i < objects.length; i++) {
+        objects[i].rotate();
+    }
+    console.log(innerRing.position.y);
+    if (moveInner) {
+        if (innerRing.dir == 'U' && innerRing.position.y > limitHeightUp) {
+            innerRing.dir = 'D';
+        }
+        if (innerRing.dir == 'D' && innerRing.position.y < limitHeightDown) {
+            innerRing.dir = 'U';
+        }
+        if (innerRing.dir == 'U') {
+            innerRing.position.y += 0.1;
+        }
+        else {
+            innerRing.position.y -= 0.1;
+        }
     }
     if (moveMiddle) {
-        middleRing.update();
-    } else {
-        middleRing.fall();
+        if (middleRing.dir == 'U' && middleRing.position.y > limitHeightUp) {
+            middleRing.dir = 'D';
+        }
+        if (middleRing.dir == 'D' && middleRing.position.y < limitHeightDown) {
+            middleRing.dir = 'U';
+        }
+        if (middleRing.dir == 'U') {
+            middleRing.position.y += 0.1;
+        }
+        else {
+            middleRing.position.y -= 0.1;
+        }
     }
-    if (moveTop) {
-        topRing.update();
-    } else {
-        topRing.fall();
+    if (moveOuter) {
+        if (outerRing.dir == 'U' && outerRing.position.y > limitHeightUp) {
+            outerRing.dir = 'D';
+        }
+        if (outerRing.dir == 'D' && outerRing.position.y < limitHeightDown) {
+            outerRing.dir = 'U';
+        }
+        if (outerRing.dir == 'U') {
+            outerRing.position.y += 0.1;
+        }
+        else {
+            outerRing.position.y -= 0.1;
+        }
     }
-    //checkCollisions();
-    changeWireframe();
 }
 
 /////////////
@@ -427,8 +667,8 @@ function init() {
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
-    window.addEventListener("resize", onResize);
-    document.getElementById('key-7').classList.add('pressed');
+    // window.addEventListener("resize", onResize);
+    // document.getElementById('key-7').classList.add('pressed');
 }
 
 /////////////////////
@@ -447,7 +687,9 @@ function animate(currentTime) {
         return;
     }
     lastTime = currentTime;
+
     update();
+
     render();
     requestAnimationFrame(animate);
 
@@ -487,20 +729,15 @@ function onKeyDown(e) {
 
 
     switch (e.keyCode) {
-
-        // key 1
-        case 49:
-            moveBase = true;
+        case 49: //1
+            moveInner = true;
             break;
-        //key 2
         case 50:
             moveMiddle = true;
             break;
-        //key 3
         case 51:
-            moveTop = true;
+            moveOuter = true;
             break;
-
         case 87: //W
         case 119: //w
             break;
@@ -531,7 +768,6 @@ function onKeyDown(e) {
         case 55: //7
 
     }
-
 }
 
 
@@ -544,23 +780,17 @@ function onKeyDown(e) {
 function onKeyUp(e) {
     'use strict';
     switch (e.keyCode) {
-
-        // key 1
         case 49:
-            moveBase = false;
+            moveInner = false;
             break;
-        //key 2
         case 50:
             moveMiddle = false;
             break;
-        //key 3
         case 51:
-            moveTop = false;
+            moveOuter = false;
             break;
-
         case 87: //W
         case 119: //w
-            break;
         case 83: //S
         case 115: //s
             break;
@@ -592,4 +822,3 @@ function onKeyUp(e) {
 
 init();
 animate();
-
