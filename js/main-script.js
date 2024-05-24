@@ -46,8 +46,8 @@ const carrocelHeight = baseHeight;
 const LEVITATE_HEIGHT = .3;
 
 
-const limitHeightUp = baseHeight * 3 / 4;
-const limitHeightDown = 0.2;
+const limitHeightUp = baseHeight * 21 / 20;
+const limitHeightDown = baseHeight / 1.5;
 
 
 
@@ -71,7 +71,7 @@ var GlobarMaterialType;
 
 var innerRing, middleRing, outerRing;
 
-var innerRingMesh, middleRingMesh, outerRingMesh, cylinderMesh;
+var innerRingMesh, middleRingMesh, outerRingMesh, cylinderMesh, mobisMesh;
 
 
 var objects = [];
@@ -81,9 +81,9 @@ var directionalLight;
 //activated while key is pressed
 
 var directionalLightFlag = true;
-var moveInner = false;
-var moveMiddle = false;
-var moveOuter = false;
+var moveInner = true;
+var moveMiddle = true;
+var moveOuter = true;
 
 
 var wireframeFlag = true;
@@ -96,6 +96,9 @@ var lambertMaterialFlag = true;
 var phongMaterialFlag = false;
 var toonMaterialFlag = false;
 var basMaterialFlag = false;
+var normalMaterialFlag = false;
+
+var mobiusLights = []
 
 /////////////////////
 /* CREATE SCENE(S) */
@@ -110,7 +113,7 @@ function createScene() {
     createDirectionalLight();
     createCarrossel(0, 0, 0);
     createSkydome();
-    createMobiusStrip(scene, 10, 1, 0x00ff00);
+    createMobiusStrip(scene, 20, 1, 0x0611CC);
 
     //scene.add(new THREE.AxesHelper(10));
 }
@@ -153,7 +156,11 @@ function createDirectionalLight() {
     scene.add(dhelper);
 }
 
-
+function switchMobiusLights() {
+    for (var i = 0; i < mobiusLights.length; i++) {
+        mobiusLights[i].visible = !mobiusLights[i].visible;
+    }
+}
 
 
 ////////////////////////
@@ -430,18 +437,20 @@ function createMobiusStrip(scene, uSteps, vSteps, color) {
     var geometry = new THREE.BufferGeometry();
     var vertices = [];
     var indices = [];
+    var normals = [];
 
     for (var i = 0; i <= uSteps; i++) {
         var u = i / uSteps * 2 * Math.PI;
         for (var j = 0; j <= vSteps; j++) {
             var v = j / vSteps - 0.5;
 
-            // formula for a point on a Mobius strip
+            // formula for a point on a Mobius strip (oriented horizontally)
             var x = (1 + v / 2 * Math.cos(u / 2)) * Math.cos(u);
-            var y = (1 + v / 2 * Math.cos(u / 2)) * Math.sin(u);
-            var z = v / 2 * Math.sin(u / 2);
+            var y = v / 2 * Math.sin(u / 2);
+            var z = (1 + v / 2 * Math.cos(u / 2)) * Math.sin(u);
 
             vertices.push(x, y, z);
+            normals.push(x, y, z); // For now, use the position as the normal (will normalize later)
         }
     }
 
@@ -460,14 +469,37 @@ function createMobiusStrip(scene, uSteps, vSteps, color) {
 
     geometry.setIndex(indices);
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
 
-    var material = new THREE.MeshLambertMaterial({ color: color });
-    var mobiusStrip = new THREE.Mesh(geometry, material);
-    strip.add(mobiusStrip);
+    // Normalize the normals
+    geometry.computeVertexNormals();
+
+    //var material = new THREE.MeshPhongMaterial({ color: color, side: THREE.DoubleSide, shininess: 100 });
+    var material = new THREE.MeshToonMaterial({ color: color, side: THREE.DoubleSide });
+
+    mobisMesh = new THREE.Mesh(geometry, material);
+    strip.add(mobisMesh);
+
+    // Add 8 punctual lights to the strip on the opposite side
+    var numLights = 8;
+    for (var i = 0; i < numLights; i++) {
+        var u = (i / numLights) * 2 * Math.PI;
+        var v = 0;
+
+        var x = (1 + v / 2 * Math.cos(u / 2)) * Math.cos(u);
+        var y = v / 2 * Math.sin(u / 2);
+        var z = (1 + v / 2 * Math.cos(u / 2)) * Math.sin(u);
+
+        var light = new THREE.PointLight(0xffffff, 3, 100);
+        light.position.set(x, y, z);
+        mobiusLights.push(light)
+        strip.add(light);
+    }
+
+
     strip.position.set(0, 7, 0);
     scene.add(strip);
 }
-
 
 function createDodecahedron(x, z, radius, obj) {
     const geometry = new THREE.DodecahedronGeometry(radius);
@@ -728,17 +760,17 @@ function createSkydome() {
 
     const texture = new THREE.TextureLoader().load('images/frame1.png');
 
-    var material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+    var material = new THREE.MeshLambertMaterial({ map: texture, side: THREE.DoubleSide });
 
     var sphere = new THREE.Mesh(geometry, material);
 
     //create a plane
     var planeGeometry = new THREE.PlaneGeometry(100, 100, 32);
-    var planeMaterial = new THREE.MeshLambertMaterial({ map: texture, side: THREE.DoubleSide });
+    var planeMaterial = new THREE.MeshLambertMaterial({ map: texture, side: 2 });
     var plane = new THREE.Mesh(planeGeometry, planeMaterial);
     plane.position.set(0, 0, 0);
     plane.rotateX(Math.PI / 2);
-    plane.position.set(0, -0.5, 0);
+    plane.position.set(0, 0, 0);
     scene.add(plane);
     sphere.position.set(0, -10, 0);
     scene.add(sphere);
@@ -747,25 +779,10 @@ function createSkydome() {
 
 
 //////////////////////
-/* CHANGE WIREFRAME */
+/* VR CONTENT */
 //////////////////////
-
-function changeWireframe() {
-    for (var i = 0; i < materials.length; i++) {
-        materials[i].wireframe = wireframeFlag;
-    }
-
-}
-
-
-//////////////////////
-/* CHECK COLLISIONS */
-//////////////////////
-
-
-///////////////////////
-/* HANDLE COLLISIONS */
-///////////////////////
+var stereoCamera = new THREE.StereoCamera();
+var VRcameraHold = new THREE.Object3D();
 
 
 ////////////
@@ -787,10 +804,10 @@ function update() {
             innerRing.dir = 'U';
         }
         if (innerRing.dir == 'U') {
-            innerRing.position.y += 0.1;
+            innerRing.position.y += 0.02;
         }
         else {
-            innerRing.position.y -= 0.1;
+            innerRing.position.y -= 0.02;
         }
     }
     if (moveMiddle) {
@@ -801,10 +818,10 @@ function update() {
             middleRing.dir = 'U';
         }
         if (middleRing.dir == 'U') {
-            middleRing.position.y += 0.1;
+            middleRing.position.y += 0.02;
         }
         else {
-            middleRing.position.y -= 0.1;
+            middleRing.position.y -= 0.02;
         }
     }
     if (moveOuter) {
@@ -815,10 +832,10 @@ function update() {
             outerRing.dir = 'U';
         }
         if (outerRing.dir == 'U') {
-            outerRing.position.y += 0.1;
+            outerRing.position.y += 0.02;
         }
         else {
-            outerRing.position.y -= 0.1;
+            outerRing.position.y -= 0.02;
         }
     }
     if (directionalLightFlag) {
@@ -830,6 +847,7 @@ function update() {
 
     if (lambertMaterialFlag) {
         cylinderMesh.material = new THREE.MeshLambertMaterial({ color: 0x0fccff });
+        mobisMesh.material = new THREE.MeshLambertMaterial({ color: 0x0611CC, side: THREE.DoubleSide });
 
         for (var i = 0; i < objects.length; i++) {
             objects[i].material = new THREE.MeshLambertMaterial({ color: 0xffffff });
@@ -842,6 +860,7 @@ function update() {
 
     } else if (phongMaterialFlag) {
         cylinderMesh.material = new THREE.MeshPhongMaterial({ color: 0x0fccff });
+        mobisMesh.material = new THREE.MeshPhongMaterial({ color: 0x0611CC, side: THREE.DoubleSide });
 
         for (var i = 0; i < objects.length; i++) {
             objects[i].material = new THREE.MeshPhongMaterial({ color: 0xffffff });
@@ -853,6 +872,7 @@ function update() {
 
     } else if (toonMaterialFlag) {
         cylinderMesh.material = new THREE.MeshToonMaterial({ color: 0x0fccff });
+        mobisMesh.material = new THREE.MeshToonMaterial({ color: 0x0611CC, side: THREE.DoubleSide });
 
         for (var i = 0; i < objects.length; i++) {
             objects[i].material = new THREE.MeshToonMaterial({ color: 0xffffff });
@@ -864,6 +884,7 @@ function update() {
 
     } else if (basMaterialFlag) {
         cylinderMesh.material = new THREE.MeshBasicMaterial({ color: 0x0fccff });
+        mobisMesh.material = new THREE.MeshBasicMaterial({ color: 0x0611CC, side: THREE.DoubleSide });
 
         for (var i = 0; i < objects.length; i++) {
             objects[i].material = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -872,6 +893,19 @@ function update() {
         innerRingMesh.material = new THREE.MeshBasicMaterial({ color: 0x0fcfff });
         middleRingMesh.material = new THREE.MeshBasicMaterial({ color: 0x0fceff });
         outerRingMesh.material = new THREE.MeshBasicMaterial({ color: 0x0fddff });
+    } else if (normalMaterialFlag) {
+
+        cylinderMesh.material = new THREE.MeshNormalMaterial({ color: 0x0fccff });
+        mobisMesh.material = new THREE.MeshNormalMaterial({ color: 0x0611CC, side: THREE.DoubleSide });
+
+
+        for (var i = 0; i < objects.length; i++) {
+            objects[i].material = new THREE.MeshNormalMaterial({ color: 0xffffff });
+        }
+
+        innerRingMesh.material = new THREE.MeshNormalMaterial({ color: 0x0fcfff });
+        middleRingMesh.material = new THREE.MeshNormalMaterial({ color: 0x0fceff });
+        outerRingMesh.material = new THREE.MeshNormalMaterial({ color: 0x0fddff });
     }
 
 
@@ -887,7 +921,13 @@ function update() {
 /////////////
 function render() {
     'use strict';
-    renderer.render(scene, camera);
+    if (renderer.xr.isPresenting) {
+        renderer.render(scene, stereoCamera.cameraL);
+        renderer.render(scene, stereoCamera.cameraR);
+    } else {
+        renderer.render(scene, camera);
+    }
+
 }
 
 ////////////////////////////////
@@ -903,17 +943,31 @@ function init() {
     document.body.appendChild(renderer.domElement);
     createScene();
     createFreeCamera();
+    middleRing.position.y += limitHeightDown;
+    outerRing.position.y += limitHeightDown;
+    innerRing.position.y += limitHeightDown;
+
 
     camera = freeCamera;
+
+    VRcameraHold.position.set(0, baseHeight, 0);
+
+    VRcameraHold.add(stereoCamera.cameraL);
+    VRcameraHold.add(stereoCamera.cameraR);
+
+
+    scene.add(VRcameraHold);
 
     controls = new OrbitControls(freeCamera, renderer.domElement); // Initialize controls globally
     freeCamera.position.set(25, 25, 25);
     controls.update(); // Call update after camera position is set
-    render();
+
+    renderer.xr.enabled = true;
+    document.body.appendChild(VRButton.createButton(renderer));
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
-    // window.addEventListener("resize", onResize);
+    window.addEventListener("resize", onResize);
     // document.getElementById('key-7').classList.add('pressed');
 }
 
@@ -927,17 +981,18 @@ let fps = 0;
 
 function animate(currentTime) {
     'use strict';
+
     const deltaTime = currentTime - lastTime;
     if (deltaTime < 1000 / 60) { // 60 fps
-        requestAnimationFrame(animate);
         return;
     }
+    renderer.setAnimationLoop(animate);
+
     lastTime = currentTime;
 
     update();
 
     render();
-    requestAnimationFrame(animate);
 
     // Calculate FPS
     frameCount++;
@@ -950,7 +1005,7 @@ function animate(currentTime) {
         console.log('FPS:', fps);
     }
 }
-requestAnimationFrame(animate);
+
 
 ////////////////////////////
 /* RESIZE WINDOW CALLBACK */
@@ -976,13 +1031,13 @@ function onKeyDown(e) {
 
     switch (e.keyCode) {
         case 49: //1
-            moveInner = true;
+            moveInner = !moveInner;
             break;
         case 50:
-            moveMiddle = true;
+            moveMiddle = !moveMiddle;
             break;
         case 51:
-            moveOuter = true;
+            moveOuter = !moveOuter;
             break;
         case 87: //W
         case 119: //w
@@ -990,6 +1045,7 @@ function onKeyDown(e) {
             lambertMaterialFlag = false;
             toonMaterialFlag = false;
             basMaterialFlag = false;
+            normalMaterialFlag = false;
             break;
         case 83: //S
         case 115: //s
@@ -1000,9 +1056,14 @@ function onKeyDown(e) {
             phongMaterialFlag = false;
             toonMaterialFlag = false;
             basMaterialFlag = false;
+            normalMaterialFlag = false;
             break;
         case 65: //A
         case 97: //a
+            break;
+        case 80: //P
+        case 112: //p
+            switchMobiusLights();
             break;
 
         case 69: //E
@@ -1011,6 +1072,7 @@ function onKeyDown(e) {
             lambertMaterialFlag = false;
             phongMaterialFlag = false;
             basMaterialFlag = false;
+            normalMaterialFlag = false;
             break;
         case 68: //D
         case 100: //d
@@ -1018,15 +1080,26 @@ function onKeyDown(e) {
             break;
         case 82: //R
         case 114: //r
+            basMaterialFlag = false;
+            lambertMaterialFlag = false;
+            phongMaterialFlag = false;
+            toonMaterialFlag = false;
+            normalMaterialFlag = true;
+            break;
+        case 84:
+        case 116: // t
             basMaterialFlag = true;
             lambertMaterialFlag = false;
             phongMaterialFlag = false;
             toonMaterialFlag = false;
+            normalMaterialFlag = false;
             break;
         case 70: //F
         case 102: //f
             break;
         case 55: //7
+            break;
+
 
     }
 }
@@ -1042,13 +1115,10 @@ function onKeyUp(e) {
     'use strict';
     switch (e.keyCode) {
         case 49:
-            moveInner = false;
             break;
         case 50:
-            moveMiddle = false;
             break;
         case 51:
-            moveOuter = false;
             break;
         case 87: //W
         case 119: //w
