@@ -46,7 +46,7 @@ const carrocelHeight = baseHeight;
 const LEVITATE_HEIGHT = .3;
 
 
-const limitHeightUp = baseHeight / 2;
+const limitHeightUp = baseHeight * 3 / 4;
 const limitHeightDown = 0.2;
 
 
@@ -481,7 +481,7 @@ function createDodecahedron(x, z, radius, obj) {
     //add spot light 
     const spotLight = new THREE.SpotLight(0xffffff, 1);
     spotLight.position.set(x, (-carrocelHeight / 2), z);
-    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + baseHeight + 1, z); // Adjust y - 1 to point down
+    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + limitHeightUp + baseHeight + 1, z); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
 
@@ -508,7 +508,7 @@ function createIcosahedron(x, z, radius, obj) {
 
     const spotLight = new THREE.SpotLight(0xffffff, 1);
     spotLight.position.set(x, (-carrocelHeight / 2), z);
-    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + baseHeight, z); // Adjust y - 1 to point down
+    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + limitHeightUp + baseHeight, z); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
 
@@ -535,7 +535,7 @@ function createTorus(x, z, radius, tubeRadius, obj) {
 
     const spotLight = new THREE.SpotLight(0xffffff, 1);
     spotLight.position.set(x, (-carrocelHeight / 2), z);
-    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + baseHeight, z); // Adjust y - 1 to point down
+    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + limitHeightUp + baseHeight, z); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
 
@@ -561,7 +561,7 @@ function createTorusKnot(x, z, radius, tubeRadius, tubularSegments, radialSegmen
     const spotLight = new THREE.SpotLight(0xffffff, 1);
     spotLight.position.set(x, (-carrocelHeight / 2), z);
 
-    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + baseHeight, z); // Adjust y - 1 to point down
+    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + limitHeightUp + baseHeight, z); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
 
@@ -594,7 +594,7 @@ function createCube(x, z, obj) {
     const spotLight = new THREE.SpotLight(0xffffff, 1);
 
     spotLight.position.set(x, (-carrocelHeight / 2), z);
-    spotLight.target.position.set(x, (-carrocelHeight / 2) + 0.2 + LEVITATE_HEIGHT + baseHeight, z); // Adjust y - 1 to point down
+    spotLight.target.position.set(x, (-carrocelHeight / 2) + 0.2 + LEVITATE_HEIGHT + limitHeightUp + baseHeight, z); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
     cube.angVel = undefined;
@@ -652,7 +652,7 @@ function createHyperboloidOneSheet(obj, a, b, c, segments, heightSegments, posx,
 
     const spotLight = new THREE.SpotLight(0xffffff, 1);
     spotLight.position.set(posx, (-carrocelHeight / 2), posz);
-    spotLight.target.position.set(posx, (-carrocelHeight / 2) + a + b - + LEVITATE_HEIGHT + baseHeight, posz); // Adjust y - 1 to point down
+    spotLight.target.position.set(posx, (-carrocelHeight / 2) + a + b - + LEVITATE_HEIGHT + limitHeightUp + baseHeight, posz); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
 
@@ -680,7 +680,7 @@ function createCylinder(radiusTop, radiusBottom, height, posx, posz, obj) {
     const spotLight = new THREE.SpotLight(0xffffff, 1);
 
     spotLight.position.set(posx, (-carrocelHeight / 2), posz);
-    spotLight.target.position.set(posx, (-carrocelHeight / 2) + height / 2 + LEVITATE_HEIGHT + baseHeight, posz); // Adjust y - 1 to point down
+    spotLight.target.position.set(posx, (-carrocelHeight / 2) + height / 2 + LEVITATE_HEIGHT + limitHeightUp + baseHeight, posz); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
 
@@ -710,7 +710,7 @@ function createCone(obj, radius, height, posx, posz) {
 
     spotLight.position.set(posx, (-carrocelHeight / 2), posz);
 
-    spotLight.target.position.set(posx, (-carrocelHeight / 2) + height + LEVITATE_HEIGHT + baseHeight, posz); // Adjust y - 1 to point down
+    spotLight.target.position.set(posx, (-carrocelHeight / 2) + height + LEVITATE_HEIGHT + limitHeightUp + baseHeight, posz); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
 
     obj.add(spotLight);
@@ -734,7 +734,7 @@ function createSkydome() {
 
     //create a plane
     var planeGeometry = new THREE.PlaneGeometry(100, 100, 32);
-    var planeMaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+    var planeMaterial = new THREE.MeshLambertMaterial({ map: texture, side: THREE.DoubleSide });
     var plane = new THREE.Mesh(planeGeometry, planeMaterial);
     plane.position.set(0, 0, 0);
     plane.rotateX(Math.PI / 2);
