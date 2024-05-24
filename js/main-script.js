@@ -109,7 +109,7 @@ function createScene() {
     materials.push(material);
     createDirectionalLight();
     createCarrossel(0, 0, 0);
-    //createSkydome();
+    createSkydome();
     createMobiusStrip(scene, 10, 1, 0x00ff00);
 
     //scene.add(new THREE.AxesHelper(10));
@@ -480,8 +480,8 @@ function createDodecahedron(x, z, radius, obj) {
 
     //add spot light 
     const spotLight = new THREE.SpotLight(0xffffff, 1);
-    spotLight.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT, z);
-    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + 1, z); // Adjust y - 1 to point down
+    spotLight.position.set(x, (-carrocelHeight / 2), z);
+    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + baseHeight + 1, z); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
 
@@ -507,8 +507,8 @@ function createIcosahedron(x, z, radius, obj) {
     //add spot light
 
     const spotLight = new THREE.SpotLight(0xffffff, 1);
-    spotLight.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT, z);
-    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + 1, z); // Adjust y - 1 to point down
+    spotLight.position.set(x, (-carrocelHeight / 2), z);
+    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + baseHeight, z); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
 
@@ -534,8 +534,8 @@ function createTorus(x, z, radius, tubeRadius, obj) {
     //add spot light
 
     const spotLight = new THREE.SpotLight(0xffffff, 1);
-    spotLight.position.set(x, (-carrocelHeight / 2) + LEVITATE_HEIGHT - 5, z);
-    spotLight.target.position.set(x, (-carrocelHeight / 2) - 10 + radius + LEVITATE_HEIGHT + 10, z); // Adjust y - 1 to point down
+    spotLight.position.set(x, (-carrocelHeight / 2), z);
+    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + baseHeight, z); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
 
@@ -559,9 +559,9 @@ function createTorusKnot(x, z, radius, tubeRadius, tubularSegments, radialSegmen
     //add spot light
 
     const spotLight = new THREE.SpotLight(0xffffff, 1);
-    spotLight.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT, z);
+    spotLight.position.set(x, (-carrocelHeight / 2), z);
 
-    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT - 1, z); // Adjust y - 1 to point down
+    spotLight.target.position.set(x, (-carrocelHeight / 2) + radius + LEVITATE_HEIGHT + baseHeight, z); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
 
@@ -593,8 +593,8 @@ function createCube(x, z, obj) {
 
     const spotLight = new THREE.SpotLight(0xffffff, 1);
 
-    spotLight.position.set(x, (-carrocelHeight / 2) + 0.2 + LEVITATE_HEIGHT, z);
-    spotLight.target.position.set(x, (-carrocelHeight / 2) + 0.2 + LEVITATE_HEIGHT - 1, z); // Adjust y - 1 to point down
+    spotLight.position.set(x, (-carrocelHeight / 2), z);
+    spotLight.target.position.set(x, (-carrocelHeight / 2) + 0.2 + LEVITATE_HEIGHT + baseHeight, z); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
     cube.angVel = undefined;
@@ -651,8 +651,8 @@ function createHyperboloidOneSheet(obj, a, b, c, segments, heightSegments, posx,
     //add spot light
 
     const spotLight = new THREE.SpotLight(0xffffff, 1);
-    spotLight.position.set(posx, (-carrocelHeight / 2) + a + b + LEVITATE_HEIGHT, posz);
-    spotLight.target.position.set(posx, (-carrocelHeight / 2) + a + b + LEVITATE_HEIGHT - 1, posz); // Adjust y - 1 to point down
+    spotLight.position.set(posx, (-carrocelHeight / 2), posz);
+    spotLight.target.position.set(posx, (-carrocelHeight / 2) + a + b - + LEVITATE_HEIGHT + baseHeight, posz); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
 
@@ -679,8 +679,8 @@ function createCylinder(radiusTop, radiusBottom, height, posx, posz, obj) {
 
     const spotLight = new THREE.SpotLight(0xffffff, 1);
 
-    spotLight.position.set(posx, (-carrocelHeight / 2) + height / 2 + LEVITATE_HEIGHT, posz);
-    spotLight.target.position.set(posx, (-carrocelHeight / 2) + height / 2 + LEVITATE_HEIGHT - 1, posz); // Adjust y - 1 to point down
+    spotLight.position.set(posx, (-carrocelHeight / 2), posz);
+    spotLight.target.position.set(posx, (-carrocelHeight / 2) + height / 2 + LEVITATE_HEIGHT + baseHeight, posz); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
     obj.add(spotLight);
 
@@ -708,9 +708,9 @@ function createCone(obj, radius, height, posx, posz) {
 
     const spotLight = new THREE.SpotLight(0xffffff, 1);
 
-    spotLight.position.set(posx, (-carrocelHeight / 2) + height / 2 + LEVITATE_HEIGHT, posz);
+    spotLight.position.set(posx, (-carrocelHeight / 2), posz);
 
-    spotLight.target.position.set(posx, (-carrocelHeight / 2) + height / 2 + LEVITATE_HEIGHT - 1, posz); // Adjust y - 1 to point down
+    spotLight.target.position.set(posx, (-carrocelHeight / 2) + height + LEVITATE_HEIGHT + baseHeight, posz); // Adjust y - 1 to point down
     const spotLightHelper = new THREE.SpotLightHelper(spotLight);
 
     obj.add(spotLight);
@@ -817,13 +817,49 @@ function update() {
     }
 
     if (lambertMaterialFlag) {
-        changeAllMaterial(new THREE.MeshLambertMaterial({ color: 0x00ff00 }));
+        cylinderMesh.material = new THREE.MeshLambertMaterial({ color: 0x0fccff });
+
+        for (var i = 0; i < objects.length; i++) {
+            objects[i].material = new THREE.MeshLambertMaterial({ color: 0xffffff });
+        }
+
+        innerRingMesh.material = new THREE.MeshLambertMaterial({ color: 0x0fcfff });
+        middleRingMesh.material = new THREE.MeshLambertMaterial({ color: 0x0fceff });
+        outerRingMesh.material = new THREE.MeshLambertMaterial({ color: 0x0fddff });
+
+
     } else if (phongMaterialFlag) {
-        changeAllMaterial(new THREE.MeshPhongMaterial({ color: 0x00ff00 }));
+        cylinderMesh.material = new THREE.MeshPhongMaterial({ color: 0x0fccff });
+
+        for (var i = 0; i < objects.length; i++) {
+            objects[i].material = new THREE.MeshPhongMaterial({ color: 0xffffff });
+        }
+
+        innerRingMesh.material = new THREE.MeshPhongMaterial({ color: 0x0fcfff });
+        middleRingMesh.material = new THREE.MeshPhongMaterial({ color: 0x0fceff });
+        outerRingMesh.material = new THREE.MeshPhongMaterial({ color: 0x0fddff });
+
     } else if (toonMaterialFlag) {
-        changeAllMaterial(new THREE.MeshToonMaterial({ color: 0x00ff00 }));
+        cylinderMesh.material = new THREE.MeshToonMaterial({ color: 0x0fccff });
+
+        for (var i = 0; i < objects.length; i++) {
+            objects[i].material = new THREE.MeshToonMaterial({ color: 0xffffff });
+        }
+
+        innerRingMesh.material = new THREE.MeshToonMaterial({ color: 0x0fcfff });
+        middleRingMesh.material = new THREE.MeshToonMaterial({ color: 0x0fceff });
+        outerRingMesh.material = new THREE.MeshToonMaterial({ color: 0x0fddff });
+
     } else if (basMaterialFlag) {
-        changeAllMaterial(new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+        cylinderMesh.material = new THREE.MeshBasicMaterial({ color: 0x0fccff });
+
+        for (var i = 0; i < objects.length; i++) {
+            objects[i].material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        }
+
+        innerRingMesh.material = new THREE.MeshBasicMaterial({ color: 0x0fcfff });
+        middleRingMesh.material = new THREE.MeshBasicMaterial({ color: 0x0fceff });
+        outerRingMesh.material = new THREE.MeshBasicMaterial({ color: 0x0fddff });
     }
 
 
@@ -833,19 +869,6 @@ function update() {
 /* CHANGE MATERIALS */
 /////////////
 
-function changeAllMaterial(materialType) {
-    // change all objects material
-
-
-    innerRingMesh.material = materialType; 123123
-    middleRingMesh.material = materialType;
-    outerRingMesh.material = materialType;
-
-    for (var i = 0; i < objects.length; i++) {
-        objects[i].material = materialType;
-    }
-
-}
 
 /////////////
 /* DISPLAY */
@@ -983,7 +1006,10 @@ function onKeyDown(e) {
             break;
         case 82: //R
         case 114: //r
-
+            basMaterialFlag = true;
+            lambertMaterialFlag = false;
+            phongMaterialFlag = false;
+            toonMaterialFlag = false;
             break;
         case 70: //F
         case 102: //f
