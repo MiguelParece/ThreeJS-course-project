@@ -128,9 +128,9 @@ function createFreeCamera() {
         1,
         1000
     );
-    freeCamera.position.x = 50;
-    freeCamera.position.y = 40;
-    freeCamera.position.z = 50;
+    freeCamera.position.x = 10;
+    freeCamera.position.y = 10;
+    freeCamera.position.z = 10;
     freeCamera.lookAt(scene.position);
 }
 
@@ -723,12 +723,24 @@ function createCone(obj, radius, height, posx, posz) {
 
 function createSkydome() {
     'use strict';
-    var geometry = new THREE.SphereGeometry(100, 60, 40);
+    var geometry = new THREE.SphereGeometry(50, 60, 40, 0, Math.PI, 0, Math.PI);
+    geometry.rotateX(-Math.PI / 2);
+
     const texture = new THREE.TextureLoader().load('images/frame1.png');
 
     var material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
 
     var sphere = new THREE.Mesh(geometry, material);
+
+    //create a plane
+    var planeGeometry = new THREE.PlaneGeometry(100, 100, 32);
+    var planeMaterial = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+    var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    plane.position.set(0, 0, 0);
+    plane.rotateX(Math.PI / 2);
+    plane.position.set(0, -0.5, 0);
+    scene.add(plane);
+    sphere.position.set(0, -10, 0);
     scene.add(sphere);
 }
 
@@ -895,7 +907,7 @@ function init() {
     camera = freeCamera;
 
     controls = new OrbitControls(freeCamera, renderer.domElement); // Initialize controls globally
-    freeCamera.position.set(30, 35, 50);
+    freeCamera.position.set(25, 25, 25);
     controls.update(); // Call update after camera position is set
     render();
 
